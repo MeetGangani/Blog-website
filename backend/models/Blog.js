@@ -3,19 +3,16 @@ const mongoose = require('mongoose');
 const BlogSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: [true, 'Blog title is required'],
+    required: [true, 'Please add a title'],
     trim: true,
-    minlength: [5, 'Title must be at least 5 characters']
+    maxlength: [100, 'Title cannot be more than 100 characters']
   },
   content: {
     type: String,
-    required: [true, 'Blog content is required'],
-    trim: true,
-    minlength: [10, 'Content must be at least 10 characters']
+    required: [true, 'Please add content']
   },
   coverImage: {
-    type: String,
-    default: ''
+    type: String
   },
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,8 +21,9 @@ const BlogSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'Category is required'],
-    enum: ['Technology', 'Lifestyle', 'Business', 'Travel', 'Health', 'Food', 'Sports', 'Other']
+    required: [true, 'Please select a category'],
+    enum: ['Technology', 'Lifestyle', 'Business', 'Travel', 'Health', 'Food', 'Other'],
+    default: 'Other'
   },
   tags: [{
     type: String,
@@ -58,7 +56,7 @@ BlogSchema.virtual('formattedDate').get(function() {
 
 // Method to check if user has liked the blog
 BlogSchema.methods.isLiked = function(userId) {
-  return this.likes.some(like => like.toString() === userId.toString());
+  return this.likes.includes(userId);
 };
 
 // Method to add like

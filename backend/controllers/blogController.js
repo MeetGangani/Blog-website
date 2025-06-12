@@ -8,37 +8,19 @@ const { uploadToCloudinary } = require('../utils/fileUpload');
 // @access  Private
 exports.createBlog = async (req, res, next) => {
   try {
-    const { title, content, category, tags } = req.body;
+    const { title, content, category, tags, coverImage } = req.body;
     
     console.log('Creating new blog with data:', { title, category, tags });
-    console.log('File uploaded?', req.file ? 'Yes' : 'No');
     
-    // Create a blog object but don't save to DB yet
-    const blogData = {
+    // Create blog with all data including coverImage
+    const blog = await Blog.create({
       title,
       content,
       author: req.user._id,
       category,
+      coverImage,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : []
-    };
-
-    // Handle image upload first if there is one
-    if (req.file) {
-      try {
-        console.log('Processing cover image:', req.file.path);
-        const imageUrl = await uploadToCloudinary(req.file);
-        console.log('Cover image uploaded successfully:', imageUrl);
-        blogData.coverImage = imageUrl;
-      } catch (uploadError) {
-        console.error('Cover image upload failed:', uploadError);
-        // Continue with blog creation even if image upload fails
-      }
-    } else {
-      console.log('No cover image to process');
-    }
-
-    // Now create the blog with image URL (if upload succeeded)
-    const blog = await Blog.create(blogData);
+    });
     
     console.log('Blog saved to database:', {
       id: blog._id,
@@ -60,16 +42,34 @@ exports.createBlog = async (req, res, next) => {
   }
 };
 
-// @desc    Get all blogs with pagination and filters
+// @desc    Get all blogs with filters
 // @route   GET /api/blogs
 // @access  Public
 exports.getBlogs = async (req, res, next) => {
   try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      sort = '-createdAt',
+      search = '',
+      category = '',
+      author = ''
+    } = req.query;
+
     // Build query
-    const { search, category, tag, page = 1, limit = 10 } = req.query;
     const query = {};
 
-    // Search by title or content
+    // Add category filter if provided
+    if (category) {
+      query.category = category;
+    }
+
+    // Add author filter if provided
+    if (author) {
+      query.author = author;
+    }
+
+    // Add search filter if provided
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
@@ -77,28 +77,32 @@ exports.getBlogs = async (req, res, next) => {
       ];
     }
 
-    // Filter by category
-    if (category) {
-      query.category = category;
-    }
-
-    // Filter by tag
-    if (tag) {
-      query.tags = tag;
-    }
-
-    // Pagination
+    // Calculate skip for pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Find blogs
+    // Get blogs with filters and pagination
     const blogs = await Blog.find(query)
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('author', 'username profilePicture');
+      .populate('author', 'username profilePicture')
+      .lean();
 
-    // Count documents
+    // Get total count for pagination
     const total = await Blog.countDocuments(query);
+
+    // Get available categories with count
+    const categoryCounts = await Blog.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Add isLiked property if user is authenticated
+    if (req.user) {
+      blogs.forEach(blog => {
+        blog.isLiked = blog.likes.includes(req.user._id);
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -106,6 +110,7 @@ exports.getBlogs = async (req, res, next) => {
       total,
       totalPages: Math.ceil(total / parseInt(limit)),
       currentPage: parseInt(page),
+      categories: categoryCounts,
       blogs
     });
   } catch (error) {
@@ -177,39 +182,25 @@ exports.updateBlog = async (req, res, next) => {
       return next(new ErrorResponse('Not authorized to update this blog', 403));
     }
 
-    const { title, content, category, tags, removeCoverImage } = req.body;
+    const { title, content, category, tags, coverImage, removeCoverImage } = req.body;
     console.log('Updating blog with data:', { title, category, tags, removeCoverImage });
-    console.log('File uploaded?', req.file ? 'Yes' : 'No');
 
     // Prepare update data
-    const updateData = {};
-    if (title) updateData.title = title;
-    if (content) updateData.content = content;
-    if (category) updateData.category = category;
-    if (tags) updateData.tags = tags.split(',').map(tag => tag.trim());
-
-    // Handle cover image
-    if (removeCoverImage === 'true') {
-      console.log('Removing existing cover image');
-      updateData.coverImage = '';
-    } else if (req.file) {
-      try {
-        console.log('Processing new cover image:', req.file.path);
-        const imageUrl = await uploadToCloudinary(req.file);
-        console.log('New cover image uploaded successfully:', imageUrl);
-        updateData.coverImage = imageUrl;
-      } catch (uploadError) {
-        console.error('Cover image upload failed:', uploadError);
-        // Continue with blog update even if image upload fails
-      }
-    }
+    const updateData = {
+      ...(title && { title }),
+      ...(content && { content }),
+      ...(category && { category }),
+      ...(tags && { tags: tags.split(',').map(tag => tag.trim()) }),
+      ...(removeCoverImage === 'true' ? { coverImage: '' } : {}),
+      ...(coverImage && { coverImage })
+    };
 
     // Update blog with new data
     blog = await Blog.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
-    );
+    ).populate('author', 'username profilePicture');
 
     res.status(200).json({
       success: true,
@@ -346,6 +337,32 @@ exports.getLikedBlogs = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error fetching liked blogs:', error);
+    next(error);
+  }
+};
+
+// @desc    Get all categories with counts
+// @route   GET /api/blogs/categories
+// @access  Public
+exports.getCategories = async (req, res, next) => {
+  try {
+    const categories = await Blog.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      categories
+    });
+  } catch (error) {
     next(error);
   }
 }; 

@@ -1,99 +1,78 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { blogsAPI } from '../services/api';
 import BlogCard from '../components/BlogCard';
-import { FiSearch, FiFilter } from 'react-icons/fi';
+import Pagination from '../components/Pagination';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
 
 const BlogsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    category: searchParams.get('category') || '',
-    tag: searchParams.get('tag') || '',
-    page: parseInt(searchParams.get('page') || '1'),
-  });
+  const [categories, setCategories] = useState([]);
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
   const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Categories for filter
-  const categories = [
-    'All',
-    'Technology',
-    'Lifestyle',
-    'Business',
-    'Travel',
-    'Health',
-    'Food',
-    'Sports',
-    'Other',
-  ];
-
-  // Fetch blogs when filters change
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-
-        // Prepare query params
-        const params = {
-          page: filters.page,
-          limit: 9, // Number of blogs per page
-        };
-
-        if (filters.search) params.search = filters.search;
-        if (filters.category && filters.category !== 'All') params.category = filters.category;
-        if (filters.tag) params.tag = filters.tag;
-
-        // Update URL with filters
-        setSearchParams(
-          Object.entries(params).reduce((acc, [key, value]) => {
-            if (value) acc.append(key, value);
-            return acc;
-          }, new URLSearchParams())
-        );
-
-        // Fetch blogs
-        const response = await blogsAPI.getAllBlogs(params);
-        setBlogs(response.data.blogs || []);
-        setTotalPages(response.data.totalPages || 1);
+        const response = await blogsAPI.getAllBlogs({
+          page: currentPage,
+          search: searchQuery,
+          category: selectedCategory
+        });
+        
+        setBlogs(response.data.blogs);
+        setCategories(response.data.categories);
+        setTotalPages(response.data.totalPages);
         setLoading(false);
-      } catch (error) {
-        console.error('Error fetching blogs:', error);
+      } catch (err) {
+        console.error('Error fetching blogs:', err);
         setError('Failed to load blogs. Please try again later.');
         setLoading(false);
       }
     };
 
     fetchBlogs();
-  }, [filters, setSearchParams]);
+  }, [currentPage, searchQuery, selectedCategory]);
 
-  // Handle search input
-  const handleSearchChange = (e) => {
-    setFilters({ ...filters, search: e.target.value });
-  };
-
-  // Handle search submit
-  const handleSearchSubmit = (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
-    setFilters({ ...filters, page: 1 }); // Reset page to 1 when searching
+    setCurrentPage(1);
+    updateSearchParams();
   };
 
-  // Handle category change
   const handleCategoryChange = (category) => {
-    setFilters({
-      ...filters,
-      category: category === 'All' ? '' : category,
-      page: 1, // Reset page to 1 when changing category
-    });
+    setSelectedCategory(category);
+    setCurrentPage(1);
+    updateSearchParams();
   };
 
-  // Handle page change
-  const handlePageChange = (newPage) => {
-    setFilters({ ...filters, page: newPage });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    updateSearchParams();
+    window.scrollTo(0, 0);
+  };
+
+  const updateSearchParams = () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    if (selectedCategory) params.set('category', selectedCategory);
+    if (currentPage > 1) params.set('page', currentPage);
+    setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('');
+    setCurrentPage(1);
+    setSearchParams({});
   };
 
   // Loading state
@@ -105,133 +84,111 @@ const BlogsPage = () => {
     );
   }
 
-  // Error state
-  if (error && blogs.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Oops!</h2>
-        <p className="text-gray-600 mb-6">{error}</p>
-        <button
-          onClick={() => setFilters({ ...filters, page: 1 })}
-          className="px-4 py-2 bg-indigo-700 text-white rounded hover:bg-indigo-800"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-      <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-8">Explore Blogs</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+        {/* Search and Filter Section */}
+        <div className="w-full md:w-64 space-y-4">
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search blogs..."
+                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </form>
 
-      {/* Search and Filters */}
-      <div className="mb-10">
-        <div className="flex flex-col md:flex-row gap-4 md:items-center">
-          {/* Search */}
-          <form onSubmit={handleSearchSubmit} className="flex-grow">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search blogs..."
-                value={filters.search}
-                onChange={handleSearchChange}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-indigo-700 text-white px-3 py-1 rounded-md text-sm"
-              >
-                Search
-              </button>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-neutral-800">Categories</h3>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="text-sm text-primary-600 hover:text-primary-700"
+                >
+                  <FiFilter className="inline mr-1" />
+                  {showFilters ? 'Hide' : 'Show'} Filters
+                </button>
+              </div>
+
+              {showFilters && (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleCategoryChange('')}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                      !selectedCategory
+                        ? 'bg-primary-50 text-primary-700'
+                        : 'text-neutral-600 hover:bg-neutral-50'
+                    }`}
+                  >
+                    All Categories
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat._id}
+                      onClick={() => handleCategoryChange(cat._id)}
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm flex justify-between items-center ${
+                        selectedCategory === cat._id
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-neutral-600 hover:bg-neutral-50'
+                      }`}
+                    >
+                      <span>{cat._id}</span>
+                      <span className="text-xs text-neutral-500">({cat.count})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </form>
 
-          {/* Filter button (mobile) */}
-          <div className="md:hidden">
-            <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-md">
-              <FiFilter /> Filters
-            </button>
+            {(searchQuery || selectedCategory) && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-neutral-600 hover:text-neutral-800 flex items-center"
+              >
+                <FiX className="mr-1" />
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Category filters */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => handleCategoryChange(category)}
-              className={`px-3 py-1 rounded-full text-sm ${
-                (category === 'All' && !filters.category) || filters.category === category
-                  ? 'bg-indigo-700 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+        {/* Blogs Grid */}
+        <div className="flex-1">
+          {error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500">{error}</p>
+            </div>
+          ) : blogs.length === 0 ? (
+            <div className="text-center py-8">
+              <h3 className="text-xl font-medium text-neutral-800 mb-2">No blogs found</h3>
+              <p className="text-neutral-600">Try adjusting your search or filter criteria</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {blogs.map((blog) => (
+                  <BlogCard key={blog._id} blog={blog} />
+                ))}
+              </div>
+              
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
-
-      {/* Blogs grid */}
-      {blogs.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-          {blogs.map((blog) => (
-            <BlogCard key={blog._id} blog={blog} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">No blogs found</h3>
-          <p className="text-gray-600">
-            Try adjusting your search or filter to find what you're looking for.
-          </p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-12 flex justify-center">
-          <nav className="flex items-center gap-1">
-            <button
-              onClick={() => handlePageChange(filters.page - 1)}
-              disabled={filters.page === 1}
-              className={`px-3 py-1 rounded ${
-                filters.page === 1
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Previous
-            </button>
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => handlePageChange(i + 1)}
-                className={`px-3 py-1 rounded ${
-                  filters.page === i + 1
-                    ? 'bg-indigo-700 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => handlePageChange(filters.page + 1)}
-              disabled={filters.page === totalPages}
-              className={`px-3 py-1 rounded ${
-                filters.page === totalPages
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Next
-            </button>
-          </nav>
-        </div>
-      )}
     </div>
   );
 };

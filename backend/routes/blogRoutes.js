@@ -7,7 +7,8 @@ const {
   deleteBlog, 
   toggleLike, 
   getBlogsByUser,
-  getLikedBlogs 
+  getLikedBlogs,
+  getCategories
 } = require('../controllers/blogController');
 const { protect, optional } = require('../middleware/authMiddleware');
 const { upload, uploadToCloudinary } = require('../utils/fileUpload');
@@ -62,24 +63,31 @@ router.post('/test-upload', protect, upload.single('image'), async (req, res) =>
 const commentRouter = require('./commentRoutes');
 router.use('/:blogId/comments', commentRouter);
 
-// Get all blogs and create a blog
-router.route('/')
-  .get(optional, getBlogs)
-  .post(protect, upload.single('coverImage'), debugFileUpload, createBlog);
-
-// Get blogs by user
+// Public routes
+router.get('/', optional, getBlogs);
+router.get('/categories', getCategories);
+router.get('/:id', optional, getBlog);
 router.get('/user/:userId', optional, getBlogsByUser);
 
-// Get blogs liked by the current user
-router.get('/liked', protect, getLikedBlogs);
+// Protected routes
+router.use(protect);
 
-// Get, update, delete a blog
-router.route('/:id')
-  .get(optional, getBlog)
-  .put(protect, upload.single('coverImage'), debugFileUpload, updateBlog)
-  .delete(protect, deleteBlog);
+// Create blog with image upload
+router.post('/', 
+  upload.single('coverImage'),
+  uploadToCloudinary,
+  createBlog
+);
 
-// Like or unlike a blog
-router.put('/:id/like', protect, toggleLike);
+// Update blog with image upload
+router.put('/:id',
+  upload.single('coverImage'),
+  uploadToCloudinary,
+  updateBlog
+);
+
+router.delete('/:id', deleteBlog);
+router.put('/:id/like', toggleLike);
+router.get('/liked', getLikedBlogs);
 
 module.exports = router; 

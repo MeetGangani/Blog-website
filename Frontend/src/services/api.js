@@ -75,6 +75,7 @@ export const blogsAPI = {
   likeBlog: (id) => api.put(`/blogs/${id}/like`),
   getBlogsByUser: (userId, params) => api.get(`/blogs/user/${userId}`, { params }),
   getLikedBlogs: (params) => api.get('/blogs/liked', { params }),
+  getCategories: () => api.get('/blogs/categories')
 };
 
 // Comments API calls
