@@ -251,24 +251,24 @@ const CommentComponent = ({ blogId }) => {
                   {editingComment === comment._id ? (
                     <div>
                       <textarea
-                        className="w-full px-4 py-3 rounded-lg border border-neutral-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none transition-colors"
-                        rows="3"
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full px-4 py-2 rounded border border-neutral-300 focus:outline-none focus:ring focus:border-primary-300"
+                        rows="3"
                       ></textarea>
                       <div className="flex justify-end space-x-2 mt-2">
                         <button
                           onClick={cancelEditingComment}
-                          className="px-3 py-1 bg-neutral-200 text-neutral-700 rounded hover:bg-neutral-300"
+                          className="px-3 py-1 text-sm bg-neutral-200 text-neutral-700 hover:bg-neutral-300 rounded"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => saveEditedComment(comment._id)}
-                          className="px-3 py-1 bg-primary-600 text-white rounded hover:bg-primary-700"
-                          disabled={submitting || !editContent.trim()}
+                          className="px-3 py-1 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded"
+                          disabled={submitting}
                         >
-                          Save
+                          {submitting ? 'Saving...' : 'Save'}
                         </button>
                       </div>
                     </div>

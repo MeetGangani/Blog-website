@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import { Link } from 'react-router-dom';
+import { FiUser, FiFileText, FiMessageSquare, FiTrash2, FiEdit, FiX } from 'react-icons/fi';
 
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -9,7 +10,15 @@ const AdminDashboardPage = () => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    username: '',
+    email: '',
+    password: '',
+    isAdmin: false
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -62,6 +71,34 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const handleNewUserChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewUser({
+      ...newUser,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await adminAPI.addUser(newUser);
+      setNewUser({
+        username: '',
+        email: '',
+        password: '',
+        isAdmin: false
+      });
+      setShowAddUserModal(false);
+    } catch (err) {
+      console.error('Error adding user:', err);
+      alert('Failed to add user. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading && !stats) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -84,205 +121,369 @@ const AdminDashboardPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="bg-gradient-to-r from-indigo-600 to-teal-500 p-6 md:p-10 rounded-xl shadow-lg backdrop-blur-sm mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-        <p className="text-white/80">Manage users, blogs, and monitor platform activity</p>
-      </div>
-
-      {/* Dashboard Tabs */}
-      <div className="mb-8 flex border-b border-gray-200">
-        <button
-          className={`py-4 px-6 font-medium ${
-            activeTab === 'overview'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Overview
-        </button>
-        <button
-          className={`py-4 px-6 font-medium ${
-            activeTab === 'users'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users
-        </button>
-        <button
-          className={`py-4 px-6 font-medium ${
-            activeTab === 'blogs'
-              ? 'text-indigo-600 border-b-2 border-indigo-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => setActiveTab('blogs')}
-        >
-          Blogs
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === 'overview' && stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-            <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-2">Total Users</h3>
-            <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{stats.totalUsers}</p>
-            <div className="mt-4 text-sm text-gray-500">
-              <span className="font-medium text-green-500">+{stats.newUsersThisWeek}</span> new this week
-            </div>
-          </div>
+    <div className="py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Admin Header */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-            <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-2">Total Blogs</h3>
-            <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{stats.totalBlogs}</p>
-            <div className="mt-4 text-sm text-gray-500">
-              <span className="font-medium text-green-500">+{stats.newBlogsThisWeek}</span> new this week
-            </div>
-          </div>
-          
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-            <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-2">Total Comments</h3>
-            <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{stats.totalComments}</p>
-            <div className="mt-4 text-sm text-gray-500">
-              <span className="font-medium text-green-500">+{stats.newCommentsThisWeek}</span> new this week
-            </div>
+          <div className="flex space-x-3 mt-4 md:mt-0">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                activeTab === 'overview'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                activeTab === 'users'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Users
+            </button>
+            <button
+              onClick={() => setActiveTab('blogs')}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                activeTab === 'blogs'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Blogs
+            </button>
           </div>
         </div>
-      )}
 
-      {activeTab === 'users' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">Loading users...</td>
-                  </tr>
-                ) : users.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">No users found.</td>
-                  </tr>
-                ) : (
-                  users.map((user) => (
-                    <tr key={user._id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="relative flex">
+              <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-indigo-600 animate-spin"></div>
+              <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 p-4 rounded-md">
+            <p className="text-red-700">{error}</p>
+          </div>
+        ) : (
+          <>
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-gray-500 mb-2">Total Users</h3>
+                    <p className="text-4xl font-bold text-indigo-600">{stats.totalUsers}</p>
+                    <div className="mt-4 flex items-center text-sm text-gray-600">
+                      <span className="text-green-500 mr-1">↑ {stats.newUsersThisWeek || 0}</span> new users this week
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-gray-500 mb-2">Total Blogs</h3>
+                    <p className="text-4xl font-bold text-indigo-600">{stats.totalBlogs}</p>
+                    <div className="mt-4 flex items-center text-sm text-gray-600">
+                      <span className="text-green-500 mr-1">↑ {stats.newBlogsThisWeek || 0}</span> new blogs this week
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white p-6 rounded-xl shadow-md">
+                    <h3 className="text-lg font-semibold text-gray-500 mb-2">Total Comments</h3>
+                    <p className="text-4xl font-bold text-indigo-600">{stats.totalComments}</p>
+                    <div className="mt-4 flex items-center text-sm text-gray-600">
+                      <span className="text-green-500 mr-1">↑ {stats.newCommentsThisWeek || 0}</span> new comments this week
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Recent Activity */}
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
+                <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+                  <ul className="divide-y divide-gray-200">
+                    {recentActivity.map((activity, index) => (
+                      <li key={index} className="px-6 py-4">
                         <div className="flex items-center">
-                          <div className="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-600 font-bold">
-                            {user.username.charAt(0).toUpperCase()}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                            activity.type === 'user' ? 'bg-blue-100 text-blue-600' :
+                            activity.type === 'blog' ? 'bg-green-100 text-green-600' : 
+                            'bg-purple-100 text-purple-600'
+                          }`}>
+                            {activity.type === 'user' && <FiUser />}
+                            {activity.type === 'blog' && <FiFileText />}
+                            {activity.type === 'comment' && <FiMessageSquare />}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{activity.message}</p>
+                            <p className="text-xs text-gray-500">{new Date(activity.timestamp).toLocaleString()}</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.isAdmin ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        }`}>
-                          {user.isAdmin ? 'Admin' : 'User'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button 
-                          onClick={() => handleDeleteUser(user._id)} 
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-4"
-                        >
-                          Delete
-                        </button>
-                        <Link 
-                          to={`/admin/users/${user._id}`} 
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                        >
-                          Edit
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            
+            {/* Users Tab */}
+            {activeTab === 'users' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
+                  <button
+                    onClick={() => setShowAddUserModal(true)}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+                  >
+                    Add User
+                  </button>
+                </div>
+                
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {users.map(user => (
+                          <tr key={user._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                  {user.profilePicture ? (
+                                    <img 
+                                      src={user.profilePicture} 
+                                      alt={user.username}
+                                      className="h-10 w-10 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-gray-500 font-medium">
+                                      {user.username.charAt(0).toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{user.username}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                user.isAdmin ? 'bg-indigo-100 text-indigo-800' : 'bg-green-100 text-green-800'
+                              }`}>
+                                {user.isAdmin ? 'Admin' : 'User'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(user.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() => handleDeleteUser(user._id)}
+                                className="text-red-600 hover:text-red-900 mr-4"
+                              >
+                                <FiTrash2 />
+                              </button>
+                              <Link
+                                to={`/admin/users/${user._id}`}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                <FiEdit />
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Blogs Tab */}
+            {activeTab === 'blogs' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Blog Management</h2>
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blog</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {blogs.map(blog => (
+                          <tr key={blog._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10 rounded bg-gray-100 overflow-hidden">
+                                  {blog.coverImage ? (
+                                    <img 
+                                      src={blog.coverImage} 
+                                      alt={blog.title}
+                                      className="h-10 w-10 object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 flex items-center justify-center bg-indigo-100 text-indigo-500">
+                                      <FiFileText />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">{blog.title}</div>
+                                  <div className="text-sm text-gray-500 truncate max-w-xs">{blog.summary}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {blog.author?.username || 'Unknown'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(blog.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                blog.published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {blog.published ? 'Published' : 'Draft'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <button
+                                onClick={() => handleDeleteBlog(blog._id)}
+                                className="text-red-600 hover:text-red-900 mr-4"
+                              >
+                                <FiTrash2 />
+                              </button>
+                              <Link
+                                to={`/blogs/${blog._id}/edit`}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                <FiEdit />
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
-      {activeTab === 'blogs' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Blog</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Author</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Published</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">Loading blogs...</td>
-                  </tr>
-                ) : blogs.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">No blogs found.</td>
-                  </tr>
-                ) : (
-                  blogs.map((blog) => (
-                    <tr key={blog._id}>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{blog.title}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{blog.summary}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {blog.author.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {new Date(blog.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          blog.published ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}>
-                          {blog.published ? 'Published' : 'Draft'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button 
-                          onClick={() => handleDeleteBlog(blog._id)} 
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-4"
-                        >
-                          Delete
-                        </button>
-                        <Link 
-                          to={`/blog/${blog._id}`} 
-                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      {/* Add User Modal */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="relative bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <button 
+              onClick={() => setShowAddUserModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-500"
+            >
+              <FiX size={20} />
+            </button>
+            
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New User</h3>
+            
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={newUser.username}
+                  onChange={handleNewUserChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={newUser.email}
+                  onChange={handleNewUserChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={newUser.password}
+                  onChange={handleNewUserChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  required
+                />
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  id="isAdmin"
+                  name="isAdmin"
+                  type="checkbox"
+                  checked={newUser.isAdmin}
+                  onChange={(e) => setNewUser({...newUser, isAdmin: e.target.checked})}
+                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-700">
+                  Admin Access
+                </label>
+              </div>
+              
+              <div className="flex justify-end pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="mr-3 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

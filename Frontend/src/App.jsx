@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -25,9 +24,8 @@ const LikedBlogs = lazy(() => import('./pages/LikedBlogs'));
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <Suspense fallback={<div className="flex justify-center items-center h-screen">
+      <AuthProvider>
+        <Suspense fallback={<div className="flex justify-center items-center h-screen">
           <div className="relative flex">
             <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary-600 animate-spin"></div>
             <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-secondary-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
@@ -96,7 +94,6 @@ function App() {
           </Routes>
         </Suspense>
       </AuthProvider>
-      </ThemeProvider>
     </BrowserRouter>
   );
 }

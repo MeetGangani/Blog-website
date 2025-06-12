@@ -21,6 +21,11 @@ const BlogDetailPage = () => {
   const [editingComment, setEditingComment] = useState(null);
   const [editContent, setEditContent] = useState('');
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
   // Fetch blog details
   useEffect(() => {
     const fetchBlogDetails = async () => {

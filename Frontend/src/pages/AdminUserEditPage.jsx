@@ -70,9 +70,10 @@ const AdminUserEditPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-center items-center h-48">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-500"></div>
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="relative flex">
+          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary-600 animate-spin"></div>
+          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-secondary-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
         </div>
       </div>
     );
@@ -80,13 +81,12 @@ const AdminUserEditPage = () => {
 
   if (error || !user) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center p-8 bg-red-50 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold text-red-700 mb-2">Error</h2>
-          <p className="text-lg text-red-600">{error || 'User not found'}</p>
-          <button
-            onClick={() => navigate('/admin/dashboard')}
-            className="mt-6 inline-block px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <div className="bg-red-50 p-4 rounded-md">
+          <p className="text-red-800">{error || 'User not found'}</p>
+          <button 
+            onClick={() => navigate('/admin/dashboard')} 
+            className="mt-4 bg-red-100 text-red-700 px-4 py-2 rounded-md hover:bg-red-200"
           >
             Back to Dashboard
           </button>
@@ -96,10 +96,10 @@ const AdminUserEditPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 md:p-8">
+    <>
+      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit User</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Edit User</h1>
           <div className="w-12 h-12 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-600 font-bold text-xl">
             {user.username.charAt(0).toUpperCase()}
           </div>
@@ -108,7 +108,7 @@ const AdminUserEditPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Username */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
             <input
@@ -117,15 +117,15 @@ const AdminUserEditPage = () => {
               type="text"
               value={formData.username}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
           </div>
           
           {/* Email */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address
             </label>
             <input
               id="email"
@@ -133,51 +133,55 @@ const AdminUserEditPage = () => {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               required
             />
           </div>
           
           {/* Admin Status */}
           <div className="flex items-center">
-            <input
-              id="isAdmin"
-              name="isAdmin"
-              type="checkbox"
-              checked={formData.isAdmin}
-              onChange={handleChange}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              Admin Status
-            </label>
+            <div className="flex items-center h-5">
+              <input
+                id="isAdmin"
+                name="isAdmin"
+                type="checkbox"
+                checked={formData.isAdmin}
+                onChange={handleChange}
+                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              />
+            </div>
+            <div className="ml-3">
+              <label htmlFor="isAdmin" className="ml-2 block text-sm text-gray-700">
+                Admin Access
+              </label>
+            </div>
           </div>
           
           {/* User Info */}
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">User Information</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="bg-gray-50 p-4 rounded-md">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">User Information</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Member since</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-gray-500">Member since</p>
+                <p className="font-medium text-gray-800">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Last updated</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-gray-500">Last updated</p>
+                <p className="font-medium text-gray-800">
                   {new Date(user.updatedAt).toLocaleDateString()}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Blog posts</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-gray-500">Blog posts</p>
+                <p className="font-medium text-gray-800">
                   {user.blogCount || 0}
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Comments</p>
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="text-gray-500">Comments</p>
+                <p className="font-medium text-gray-800">
                   {user.commentCount || 0}
                 </p>
               </div>
@@ -189,7 +193,7 @@ const AdminUserEditPage = () => {
             <button
               type="button"
               onClick={() => navigate('/admin/dashboard')}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               Cancel
             </button>
@@ -205,7 +209,7 @@ const AdminUserEditPage = () => {
           </div>
         </form>
       </div>
-    </div>
+    </>
   );
 };
 
