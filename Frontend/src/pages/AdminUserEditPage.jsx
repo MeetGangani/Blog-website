@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminUserEditPage = () => {
   const { id } = useParams();
@@ -70,11 +71,8 @@ const AdminUserEditPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="relative flex">
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary-600 animate-spin"></div>
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-secondary-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
-        </div>
+      <div className="flex justify-center items-center min-h-[70vh]">
+        <LoadingSpinner size="lg" text="Loading user data..." />
       </div>
     );
   }

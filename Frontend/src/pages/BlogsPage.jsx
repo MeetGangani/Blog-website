@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { blogsAPI } from '../services/api';
 import BlogCard from '../components/BlogCard';
 import { FiSearch, FiFilter } from 'react-icons/fi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState([]);
@@ -99,7 +100,7 @@ const BlogsPage = () => {
   if (loading && blogs.length === 0) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700"></div>
+        <LoadingSpinner size="lg" text="Loading blogs..." />
       </div>
     );
   }

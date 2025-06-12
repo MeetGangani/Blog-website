@@ -5,6 +5,7 @@ import { blogsAPI } from '../services/api';
 import useAuth from '../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import TiptapEditor from '../components/TiptapEditor';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const EditBlogPage = () => {
   const { id } = useParams();
@@ -230,7 +231,7 @@ const EditBlogPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700"></div>
+        <LoadingSpinner size="lg" text="Loading blog..." />
       </div>
     );
   }

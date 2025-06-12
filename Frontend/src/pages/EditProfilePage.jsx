@@ -4,6 +4,7 @@ import { authAPI } from '../services/api';
 import useAuth from '../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import { FiUser, FiMail, FiFileText, FiLock, FiSave, FiChevronLeft, FiCamera, FiLoader } from 'react-icons/fi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const EditProfilePage = () => {
   const { user, updateProfile } = useAuth();
@@ -274,7 +275,7 @@ const EditProfilePage = () => {
                     <div className="absolute bottom-0 right-0">
                       <label htmlFor="profile-picture-upload" className={`cursor-pointer block w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-md ${uploadingImage ? 'opacity-70' : ''}`}>
                         {uploadingImage ? (
-                          <FiLoader className="animate-spin" size={14} />
+                          <LoadingSpinner size="xs" />
                         ) : (
                           <FiCamera size={14} />
                         )}
@@ -297,10 +298,10 @@ const EditProfilePage = () => {
                       JPG, PNG or GIF. Max 1MB.
                     </p>
                     {uploadingImage && (
-                      <p className="text-sm text-primary-600 mt-2 flex items-center">
-                        <FiLoader className="animate-spin mr-2" size={14} /> 
-                        Uploading image...
-                      </p>
+                      <div className="text-center text-sm text-neutral-600 mt-2 flex items-center justify-center">
+                        <LoadingSpinner size="xs" />
+                        <span className="ml-2">Uploading image...</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -454,7 +455,7 @@ const EditProfilePage = () => {
                   (loading || uploadingImage) ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               >
-                {loading ? <FiLoader className="animate-spin mr-2" /> : <FiSave className="mr-2" />}
+                {loading ? <LoadingSpinner size="xs" /> : <FiSave className="mr-2" />}
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>

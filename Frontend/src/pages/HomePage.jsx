@@ -4,6 +4,7 @@ import { FiArrowRight, FiBookOpen, FiTrendingUp, FiLayout, FiMessageCircle, FiHe
 import BlogCard from '../components/BlogCard';
 import { blogsAPI } from '../services/api';
 import useAuth from '../hooks/useAuth';
+import LoadingSpinner from '../components/LoadingSpinner';
 // Import homepage image
 import homepageImage from '../assets/homepageimg.png';
 
@@ -125,10 +126,7 @@ const HomePage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="relative flex">
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary-600 animate-spin"></div>
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-secondary-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
-        </div>
+        <LoadingSpinner size="lg" text="Loading content..." />
       </div>
     );
   }

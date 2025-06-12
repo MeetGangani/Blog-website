@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../services/api';
 import { Link } from 'react-router-dom';
 import { FiUser, FiFileText, FiMessageSquare, FiTrash2, FiEdit, FiX } from 'react-icons/fi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -101,10 +102,8 @@ const AdminDashboardPage = () => {
 
   if (loading && !stats) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-center items-center h-48">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-500"></div>
-        </div>
+      <div className="flex justify-center items-center min-h-[70vh]">
+        <LoadingSpinner size="lg" text="Loading dashboard..." />
       </div>
     );
   }
@@ -163,11 +162,8 @@ const AdminDashboardPage = () => {
 
         {/* Loading State */}
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="relative flex">
-              <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-indigo-600 animate-spin"></div>
-              <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-purple-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
-            </div>
+          <div className="flex justify-center items-center py-8">
+            <LoadingSpinner size="md" text="Updating..." />
           </div>
         ) : error ? (
           <div className="bg-red-50 p-4 rounded-md">

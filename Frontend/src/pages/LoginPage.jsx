@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { FiMail, FiLock, FiArrowRight } from 'react-icons/fi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const LoginPage = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -51,6 +53,7 @@ const LoginPage = () => {
 
     if (validateForm()) {
       setIsSubmitting(true);
+      setLoading(true);
 
       try {
         await login(formData);
@@ -60,6 +63,7 @@ const LoginPage = () => {
         // Handle specific errors if needed
       } finally {
         setIsSubmitting(false);
+        setLoading(false);
       }
     }
   };
@@ -147,27 +151,16 @@ const LoginPage = () => {
           <div>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-700 hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                isSubmitting ? 'opacity-75 cursor-not-allowed' : ''
-              }`}
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${loading ? 'opacity-75 cursor-not-allowed' : ''}`}
+              disabled={loading}
             >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    ></path>
-                  </svg>
-                  Signing in...
-                </span>
+              {loading ? (
+                <>
+                  <LoadingSpinner size="xs" />
+                  <span className="ml-2">Signing in...</span>
+                </>
               ) : (
-                <span className="flex items-center">
-                  Sign in <FiArrowRight className="ml-2" />
-                </span>
+                'Sign in'
               )}
             </button>
           </div>

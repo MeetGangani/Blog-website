@@ -6,6 +6,7 @@ import { FiCalendar, FiUser, FiMessageSquare, FiEdit, FiTrash } from 'react-icon
 import { FiHeart } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const BlogDetailPage = () => {
   const { id } = useParams();
@@ -215,7 +216,7 @@ const BlogDetailPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-700"></div>
+        <LoadingSpinner size="lg" text="Loading blog..." />
       </div>
     );
   }

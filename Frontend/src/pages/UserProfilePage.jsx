@@ -4,6 +4,7 @@ import { getUserProfile, getUserBlogs } from '../services/api';
 import BlogCard from '../components/BlogCard';
 import useAuth from '../hooks/useAuth';
 import { FiEdit3, FiMail, FiCalendar, FiBookOpen, FiHeart, FiMessageSquare, FiChevronRight } from 'react-icons/fi';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const UserProfilePage = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -47,11 +48,8 @@ const UserProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-16 flex justify-center items-center min-h-[60vh]">
-        <div className="relative flex">
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-primary-600 animate-spin"></div>
-          <div className="h-12 w-12 rounded-full border-t-2 border-b-2 border-secondary-500 animate-spin absolute" style={{animationDelay: '-0.2s'}}></div>
-        </div>
+      <div className="flex justify-center items-center min-h-[70vh]">
+        <LoadingSpinner size="lg" text="Loading profile..." />
       </div>
     );
   }
