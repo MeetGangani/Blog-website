@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getUserProfile, getUserBlogs } from '../services/api';
+import { getUserProfile, getUserBlogs, userAPI } from '../services/api';
 import BlogCard from '../components/BlogCard';
 import useAuth from '../hooks/useAuth';
-import { FiEdit3, FiMail, FiCalendar, FiBookOpen, FiHeart, FiMessageSquare, FiChevronRight } from 'react-icons/fi';
+import { FiEdit3, FiMail, FiCalendar, FiBookOpen, FiHeart, FiMessageSquare, FiChevronRight, FiUserPlus, FiUserCheck } from 'react-icons/fi';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { toast } from 'react-hot-toast';
 
 const UserProfilePage = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -12,8 +13,11 @@ const UserProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('blogs');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const { username } = useParams();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -34,6 +38,22 @@ const UserProfilePage = () => {
         
         const blogsData = await getUserBlogs(profileData._id);
         setUserBlogs(blogsData);
+
+        // Fetch follow status and counts if viewing another user's profile
+        if (isAuthenticated && profileData._id !== user._id) {
+          try {
+            const followStatusResponse = await userAPI.checkFollowing(profileData._id);
+            setIsFollowing(followStatusResponse.data.isFollowing);
+
+            const followersResponse = await userAPI.getFollowers(profileData._id);
+            setFollowersCount(followersResponse.data.count);
+
+            const followingResponse = await userAPI.getFollowing(profileData._id);
+            setFollowingCount(followingResponse.data.count);
+          } catch (err) {
+            console.error('Error fetching follow data:', err);
+          }
+        }
         
         setLoading(false);
       } catch (err) {
@@ -44,7 +64,30 @@ const UserProfilePage = () => {
     };
 
     fetchUserData();
-  }, [username, user]);
+  }, [username, user, isAuthenticated]);
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please log in to follow users');
+      return;
+    }
+
+    try {
+      if (isFollowing) {
+        await userAPI.unfollowUser(userProfile._id);
+        setFollowersCount(prev => prev - 1);
+        toast.success(`Unfollowed ${userProfile.username}`);
+      } else {
+        await userAPI.followUser(userProfile._id);
+        setFollowersCount(prev => prev + 1);
+        toast.success(`Following ${userProfile.username}`);
+      }
+      setIsFollowing(!isFollowing);
+    } catch (error) {
+      console.error('Error following/unfollowing user:', error);
+      toast.error('Failed to update follow status');
+    }
+  };
 
   if (loading) {
     return (
@@ -80,7 +123,9 @@ const UserProfilePage = () => {
   const stats = [
     { label: 'Blogs', value: userBlogs.length, icon: <FiBookOpen size={18} /> },
     { label: 'Likes', value: userBlogs.reduce((sum, blog) => sum + (blog.likesCount || 0), 0), icon: <FiHeart size={18} /> },
-    { label: 'Comments', value: userBlogs.reduce((sum, blog) => sum + (blog.commentsCount || 0), 0), icon: <FiMessageSquare size={18} /> }
+    { label: 'Comments', value: userBlogs.reduce((sum, blog) => sum + (blog.commentsCount || 0), 0), icon: <FiMessageSquare size={18} /> },
+    { label: 'Followers', value: followersCount, icon: <FiUserPlus size={18} /> },
+    { label: 'Following', value: followingCount, icon: <FiUserCheck size={18} /> }
   ];
 
   // Get user initials for avatar placeholder
@@ -126,7 +171,31 @@ const UserProfilePage = () => {
             
             {/* Profile Info */}
             <div className="text-white text-center md:text-left flex-grow">
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{userProfile.username}</h1>
+              <div className="flex items-center justify-center md:justify-start gap-4 mb-4">
+                <h1 className="text-3xl md:text-4xl font-bold">{userProfile.username}</h1>
+                {!isOwnProfile && isAuthenticated && (
+                  <button
+                    onClick={handleFollow}
+                    className={`px-4 py-2 rounded-full border ${
+                      isFollowing
+                        ? 'bg-white/10 border-white/50 hover:bg-white/20'
+                        : 'bg-white text-primary-600 hover:bg-neutral-100'
+                    } transition-all flex items-center gap-2`}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <FiUserCheck size={18} />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <FiUserPlus size={18} />
+                        Follow
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-4 text-sm text-white/90">
                 {userProfile.email && (

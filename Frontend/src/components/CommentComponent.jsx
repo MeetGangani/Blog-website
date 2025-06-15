@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { commentsAPI } from '../services/api';
 import useAuth from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { FiEdit, FiTrash, FiHeart, FiMessageSquare } from 'react-icons/fi';
+import ReplyComponent from './ReplyComponent';
 
 const CommentComponent = ({ blogId }) => {
   const [comments, setComments] = useState([]);
@@ -12,6 +14,10 @@ const CommentComponent = ({ blogId }) => {
   const { user, isAuthenticated } = useAuth();
   const [editingComment, setEditingComment] = useState(null);
   const [editContent, setEditContent] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [likesCount, setLikesCount] = useState({});
+  const [likedComments, setLikedComments] = useState(new Set());
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -21,6 +27,12 @@ const CommentComponent = ({ blogId }) => {
         
         if (response.data && response.data.comments) {
           setComments(response.data.comments);
+          // Initialize likes count
+          const likesObj = {};
+          response.data.comments.forEach(comment => {
+            likesObj[comment._id] = comment.likes?.length || 0;
+          });
+          setLikesCount(likesObj);
         } else {
           setComments([]);
         }
@@ -101,6 +113,70 @@ const CommentComponent = ({ blogId }) => {
     }
   };
 
+  const handleReply = async (commentId) => {
+    if (!replyContent.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const response = await commentsAPI.addReply(commentId, { content: replyContent });
+      
+      if (response.data && response.data.comment) {
+        setComments(comments.map(comment => 
+          comment._id === commentId ? response.data.comment : comment
+        ));
+        setReplyingTo(null);
+        setReplyContent('');
+      }
+    } catch (err) {
+      console.error('Error posting reply:', err);
+      setError('Failed to post reply. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLikeComment = async (commentId) => {
+    try {
+      const response = await commentsAPI.toggleCommentLike(commentId);
+      if (response.data) {
+        setLikesCount(prev => ({
+          ...prev,
+          [commentId]: response.data.likesCount
+        }));
+        setLikedComments(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(commentId)) {
+            newSet.delete(commentId);
+          } else {
+            newSet.add(commentId);
+          }
+          return newSet;
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      setError('Failed to update like. Please try again.');
+    }
+  };
+
+  const handleReplyUpdate = (commentId, updatedComment) => {
+    setComments(comments.map(comment => 
+      comment._id === commentId ? updatedComment : comment
+    ));
+  };
+
+  const handleReplyDelete = (commentId, replyId) => {
+    setComments(comments.map(comment => {
+      if (comment._id === commentId) {
+        return {
+          ...comment,
+          replies: comment.replies.filter(reply => reply._id !== replyId)
+        };
+      }
+      return comment;
+    }));
+  };
+
   return (
     <div className="mt-10">
       <h2 className="text-2xl font-bold text-neutral-800 mb-6">
@@ -169,6 +245,9 @@ const CommentComponent = ({ blogId }) => {
             const username = comment.user?.username || "Anonymous";
             const firstInitial = username.charAt(0).toUpperCase();
             
+            const isAuthor = user && comment.user && user._id === comment.user._id;
+            const isAdmin = user && user.role === 'admin';
+
             return (
               <div
                 key={comment._id}
@@ -214,15 +293,7 @@ const CommentComponent = ({ blogId }) => {
                         onClick={() => startEditingComment(comment)}
                         className="text-neutral-400 hover:text-blue-600 transition-colors"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" />
-                          <path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" />
-                        </svg>
+                        <FiEdit size={16} />
                       </button>
                       
                       {/* Delete button */}
@@ -230,18 +301,7 @@ const CommentComponent = ({ blogId }) => {
                         onClick={() => handleDeleteComment(comment._id)}
                         className="text-neutral-400 hover:text-red-600 transition-colors"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
+                        <FiTrash size={16} />
                       </button>
                     </div>
                   )}
@@ -276,6 +336,66 @@ const CommentComponent = ({ blogId }) => {
                     <p>{comment.content}</p>
                   )}
                 </div>
+
+                {/* Reply Button */}
+                {isAuthenticated && !editingComment && (
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
+                      className="flex items-center text-sm text-gray-500 hover:text-primary-600"
+                    >
+                      <FiMessageSquare className="mr-1" />
+                      Reply
+                    </button>
+                  </div>
+                )}
+
+                {/* Reply Form */}
+                {replyingTo === comment._id && (
+                  <div className="mt-3">
+                    <textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none transition-colors"
+                      rows="2"
+                      placeholder="Write a reply..."
+                    />
+                    <div className="flex justify-end space-x-2 mt-2">
+                      <button
+                        onClick={() => setReplyingTo(null)}
+                        className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleReply(comment._id)}
+                        disabled={submitting || !replyContent.trim()}
+                        className={`px-3 py-1 text-sm text-white rounded ${
+                          submitting || !replyContent.trim()
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-primary-600 hover:bg-primary-700'
+                        }`}
+                      >
+                        {submitting ? 'Posting...' : 'Post Reply'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Replies */}
+                {comment.replies && comment.replies.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {comment.replies.map(reply => (
+                      <ReplyComponent
+                        key={reply._id}
+                        reply={reply}
+                        commentId={comment._id}
+                        onReplyUpdate={(updatedComment) => handleReplyUpdate(comment._id, updatedComment)}
+                        onReplyDelete={(replyId) => handleReplyDelete(comment._id, replyId)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

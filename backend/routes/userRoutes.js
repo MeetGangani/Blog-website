@@ -1,5 +1,14 @@
 const express = require('express');
 const User = require('../models/User');
+const {
+  followUser,
+  unfollowUser,
+  getFollowers,
+  getFollowing,
+  checkFollowing
+} = require('../controllers/userController');
+const { protect } = require('../middleware/authMiddleware');
+
 const router = express.Router();
 
 // Get user profile by username
@@ -18,5 +27,14 @@ router.get('/:username/profile', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Follow/Unfollow routes
+router.post('/:id/follow', protect, followUser);
+router.post('/:id/unfollow', protect, unfollowUser);
+
+// Get followers/following
+router.get('/:id/followers', getFollowers);
+router.get('/:id/following', getFollowing);
+router.get('/:id/isFollowing', protect, checkFollowing);
 
 module.exports = router; 

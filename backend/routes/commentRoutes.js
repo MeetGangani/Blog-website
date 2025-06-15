@@ -5,7 +5,11 @@ const {
   getComment, 
   updateComment, 
   deleteComment,
-  addReply
+  addReply,
+  updateReply,
+  deleteReply,
+  toggleCommentLike,
+  toggleReplyLike
 } = require('../controllers/commentController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -22,7 +26,19 @@ router.route('/:id')
   .put(protect, updateComment)
   .delete(protect, deleteComment);
 
-// Add reply to comment
-router.post('/:id/replies', protect, addReply);
+// Reply routes
+router.route('/:id/replies')
+  .post(protect, addReply);
+
+router.route('/:id/replies/:replyId')
+  .put(protect, updateReply)
+  .delete(protect, deleteReply);
+
+// Like routes
+router.route('/:id/like')
+  .post(protect, toggleCommentLike);
+
+router.route('/:id/replies/:replyId/like')
+  .post(protect, toggleReplyLike);
 
 module.exports = router; 

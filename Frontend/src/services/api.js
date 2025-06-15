@@ -85,6 +85,10 @@ export const commentsAPI = {
   updateComment: (id, commentData) => api.put(`/comments/${id}`, commentData),
   deleteComment: (id) => api.delete(`/comments/${id}`),
   addReply: (id, replyData) => api.post(`/comments/${id}/replies`, replyData),
+  updateReply: (commentId, replyId, replyData) => api.put(`/comments/${commentId}/replies/${replyId}`, replyData),
+  deleteReply: (commentId, replyId) => api.delete(`/comments/${commentId}/replies/${replyId}`),
+  toggleCommentLike: (id) => api.post(`/comments/${id}/like`),
+  toggleReplyLike: (commentId, replyId) => api.post(`/comments/${commentId}/replies/${replyId}/like`)
 };
 
 // Admin API calls
@@ -96,6 +100,15 @@ export const adminAPI = {
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getAllBlogs: (params) => api.get('/admin/blogs', { params }),
   deleteBlog: (id) => api.delete(`/admin/blogs/${id}`),
+};
+
+// User API calls
+export const userAPI = {
+  followUser: (userId) => api.post(`/users/${userId}/follow`),
+  unfollowUser: (userId) => api.post(`/users/${userId}/unfollow`),
+  getFollowers: (userId) => api.get(`/users/${userId}/followers`),
+  getFollowing: (userId) => api.get(`/users/${userId}/following`),
+  checkFollowing: (userId) => api.get(`/users/${userId}/isFollowing`)
 };
 
 // Helper methods for more direct API usage
