@@ -90,7 +90,26 @@ UserSchema.methods.matchPassword = async function(enteredPassword) {
 
 // Method to check if user is following another user
 UserSchema.methods.isFollowing = function(userId) {
-  return this.following ? this.following.includes(userId) : false;
+  console.log('isFollowing check:', {
+    userId: userId.toString(),
+    following: this.following ? this.following.map(f => f.toString()) : [],
+    hasFollowing: !!this.following,
+    isArray: Array.isArray(this.following)
+  });
+
+  if (!this.following || !Array.isArray(this.following) || this.following.length === 0) {
+    return false;
+  }
+  
+  const targetId = userId.toString();
+  const result = this.following.some(id => id && id.toString() === targetId);
+  
+  console.log('isFollowing result:', {
+    targetId,
+    result
+  });
+  
+  return result;
 };
 
 // Method to follow a user
@@ -113,20 +132,56 @@ UserSchema.methods.follow = async function(userId) {
 
 // Method to unfollow a user
 UserSchema.methods.unfollow = async function(userId) {
+  console.log('Unfollow method called:', {
+    userId: userId.toString(),
+    currentFollowing: this.following ? this.following.map(f => f.toString()) : []
+  });
+
   // Initialize arrays if they don't exist
   if (!this.following) this.following = [];
   
   if (this.isFollowing(userId)) {
+    // Remove from following array
+    const beforeLength = this.following.length;
     this.following = this.following.filter(id => id.toString() !== userId.toString());
+    const afterLength = this.following.length;
+    
+    console.log('Following array update:', {
+      beforeLength,
+      afterLength,
+      removed: beforeLength - afterLength
+    });
+
+    // Update the other user's followers array
     const userToUnfollow = await this.constructor.findById(userId);
     if (userToUnfollow) {
       if (!userToUnfollow.followers) userToUnfollow.followers = [];
-      userToUnfollow.followers = userToUnfollow.followers.filter(id => id.toString() !== this._id.toString());
+      
+      const beforeFollowers = userToUnfollow.followers.length;
+      userToUnfollow.followers = userToUnfollow.followers.filter(
+        id => id.toString() !== this._id.toString()
+      );
+      const afterFollowers = userToUnfollow.followers.length;
+      
+      console.log('Followers array update:', {
+        beforeFollowers,
+        afterFollowers,
+        removed: beforeFollowers - afterFollowers
+      });
+
       await userToUnfollow.save();
     }
-    return true;
+
+    // Verify the arrays were updated correctly
+    const stillFollowing = this.following.some(id => id.toString() === userId.toString());
+    console.log('Verification:', {
+      stillFollowing,
+      currentFollowing: this.following.map(f => f.toString())
+    });
+
+    return !stillFollowing; // Return true if successfully unfollowed
   }
-  return false;
+  return false; // Return false if wasn't following
 };
 
 module.exports = mongoose.model('User', UserSchema); 

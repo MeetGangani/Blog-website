@@ -66,26 +66,105 @@ const UserProfilePage = () => {
     fetchUserData();
   }, [username, user, isAuthenticated]);
 
+  useEffect(() => {
+    const syncFollowStatus = async () => {
+      if (isAuthenticated && userProfile && user && userProfile._id !== user._id) {
+        try {
+          const followStatusResponse = await userAPI.checkFollowing(userProfile._id);
+          console.log('Syncing follow status:', {
+            isFollowing: followStatusResponse.data.isFollowing,
+            userId: userProfile._id
+          });
+          setIsFollowing(followStatusResponse.data.isFollowing);
+        } catch (err) {
+          console.error('Error syncing follow status:', err);
+        }
+      }
+    };
+
+    syncFollowStatus();
+  }, [isAuthenticated, userProfile, user]);
+
   const handleFollow = async () => {
     if (!isAuthenticated) {
       toast.error('Please log in to follow users');
       return;
     }
 
+    if (!userProfile || !user) {
+      toast.error('Unable to update follow status');
+      return;
+    }
+
     try {
-      if (isFollowing) {
-        await userAPI.unfollowUser(userProfile._id);
-        setFollowersCount(prev => prev - 1);
+      console.log('Attempting to follow/unfollow user:', {
+        userId: userProfile._id,
+        isFollowing,
+        currentUser: user._id
+      });
+
+      // Store current state to prevent race conditions
+      const wasFollowing = isFollowing;
+
+      // Optimistically update UI
+      setIsFollowing(!wasFollowing);
+      setFollowersCount(prev => wasFollowing ? prev - 1 : prev + 1);
+
+      if (wasFollowing) {
+        const response = await userAPI.unfollowUser(userProfile._id);
+        console.log('Unfollow response:', response.data);
+        
+        if (!response.data.success) {
+          // Revert optimistic update if failed
+          setIsFollowing(true);
+          setFollowersCount(prev => prev + 1);
+          throw new Error(response.data.message || 'Failed to unfollow user');
+        }
+        
         toast.success(`Unfollowed ${userProfile.username}`);
       } else {
-        await userAPI.followUser(userProfile._id);
-        setFollowersCount(prev => prev + 1);
+        const response = await userAPI.followUser(userProfile._id);
+        console.log('Follow response:', response.data);
+        
+        if (!response.data.success) {
+          // Revert optimistic update if failed
+          setIsFollowing(false);
+          setFollowersCount(prev => prev - 1);
+          throw new Error(response.data.message || 'Failed to follow user');
+        }
+        
         toast.success(`Following ${userProfile.username}`);
       }
-      setIsFollowing(!isFollowing);
+
+      // Sync the follow status after the action
+      const followStatusResponse = await userAPI.checkFollowing(userProfile._id);
+      console.log('Follow status sync:', followStatusResponse.data);
+      
+      if (followStatusResponse.data.isFollowing !== !wasFollowing) {
+        // If the server state doesn't match what we expect, update UI to match server
+        setIsFollowing(followStatusResponse.data.isFollowing);
+        setFollowersCount(prev => followStatusResponse.data.isFollowing ? prev + 1 : prev - 1);
+      }
     } catch (error) {
       console.error('Error following/unfollowing user:', error);
-      toast.error('Failed to update follow status');
+      console.error('Error details:', {
+        response: error.response?.data,
+        status: error.response?.status,
+        message: error.message
+      });
+      
+      // Sync the follow status in case of error
+      try {
+        const followStatusResponse = await userAPI.checkFollowing(userProfile._id);
+        setIsFollowing(followStatusResponse.data.isFollowing);
+        // Update followers count based on actual status
+        const followersResponse = await userAPI.getFollowers(userProfile._id);
+        setFollowersCount(followersResponse.data.count);
+      } catch (syncError) {
+        console.error('Error syncing follow status after error:', syncError);
+      }
+      
+      toast.error(error.response?.data?.message || 'Failed to update follow status');
     }
   };
 

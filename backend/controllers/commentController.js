@@ -1,5 +1,6 @@
 const Comment = require('../models/Comment');
 const Blog = require('../models/Blog');
+const Notification = require('../models/Notification');
 const { ErrorResponse } = require('../utils/errorHandler');
 
 // @desc    Create a comment
@@ -33,6 +34,18 @@ exports.createComment = async (req, res, next) => {
       path: 'user',
       select: 'username email profilePicture bio role'
     });
+
+    // Create notification for blog author if they're not the one commenting
+    if (blog.author.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: blog.author,
+        sender: req.user._id,
+        type: 'comment',
+        blog: blog._id,
+        comment: comment._id,
+        message: `${req.user.username} commented on your blog "${blog.title}"`
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -188,26 +201,43 @@ exports.addReply = async (req, res, next) => {
     const comment = await Comment.findById(req.params.id);
 
     if (!comment) {
-      return next(new ErrorResponse(`Comment not found with id of ${req.params.id}`, 404));
+      return next(new ErrorResponse('Comment not found', 404));
     }
 
     // Add reply
-    comment.replies.push({
+    const reply = {
       content,
-      user: req.user._id
-    });
+      user: req.user._id,
+      createdAt: Date.now()
+    };
 
+    comment.replies.push(reply);
     await comment.save();
 
-    // Populate user information
+    // Populate user information for the reply
     await comment.populate({
       path: 'replies.user',
       select: 'username email profilePicture bio role'
     });
 
-    res.status(201).json({
+    // Get the blog for notification
+    const blog = await Blog.findById(comment.blog);
+
+    // Create notification for comment author if they're not the one replying
+    if (comment.user.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: comment.user,
+        sender: req.user._id,
+        type: 'reply',
+        blog: blog._id,
+        comment: comment._id,
+        message: `${req.user.username} replied to your comment on "${blog.title}"`
+      });
+    }
+
+    res.status(200).json({
       success: true,
-      comment
+      reply: comment.replies[comment.replies.length - 1]
     });
   } catch (error) {
     next(error);

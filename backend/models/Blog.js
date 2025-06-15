@@ -46,12 +46,14 @@ const BlogSchema = new mongoose.Schema({
     default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Virtual for formatted date
 BlogSchema.virtual('formattedDate').get(function() {
-  return this.createdAt.toLocaleDateString();
+  return this.createdAt ? this.createdAt.toLocaleDateString() : 'Date not available';
 });
 
 // Method to check if user has liked the blog
@@ -78,9 +80,5 @@ BlogSchema.methods.removeLike = function(userId) {
   }
   return false;
 };
-
-// Set toJSON option to include virtuals
-BlogSchema.set('toJSON', { virtuals: true });
-BlogSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Blog', BlogSchema); 

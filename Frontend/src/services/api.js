@@ -111,6 +111,15 @@ export const userAPI = {
   checkFollowing: (userId) => api.get(`/users/${userId}/isFollowing`)
 };
 
+// Notifications API calls
+export const notificationsAPI = {
+  getNotifications: () => api.get('/notifications'),
+  getUnreadCount: () => api.get('/notifications/unread/count'),
+  markAsRead: (notificationIds) => api.put('/notifications/read', { notificationIds }),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  clearAllNotifications: () => api.delete('/notifications/clear-all')
+};
+
 // Helper methods for more direct API usage
 export const getUserProfile = async (username) => {
   try {

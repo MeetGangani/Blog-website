@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { FiMenu, FiX, FiUser, FiLogOut, FiEdit, FiHome, FiSearch, FiBook } from 'react-icons/fi';
+import { FiMenu, FiX, FiUser, FiLogOut, FiEdit, FiHome, FiSearch, FiBook, FiBell } from 'react-icons/fi';
 import { BiSolidDashboard } from 'react-icons/bi';
+import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -104,60 +105,63 @@ const Navbar = () => {
           {/* User Menu - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
-              <div className="relative group">
-                <button className="flex items-center space-x-2 px-3 py-2 rounded-full bg-neutral-50 border border-neutral-100 group-hover:bg-neutral-100 transition-colors">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center">
-                    {user.profilePicture ? (
-                      <img
-                        src={user.profilePicture}
-                        alt={user.username}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <FiUser className="text-primary-600" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium text-neutral-700">{user.username}</span>
-                </button>
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-soft border border-neutral-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform group-hover:translate-y-0 translate-y-1 z-50">
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
-                  >
-                    <FiUser className="mr-3 text-neutral-400" /> Profile
-                  </Link>
-                  <Link
-                    to="/create-blog"
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
-                  >
-                    <FiEdit className="mr-3 text-neutral-400" /> Create Blog
-                  </Link>
-                  <Link
-                    to="/liked-blogs"
-                    className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 text-neutral-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                    </svg>
-                    Liked Blogs
-                  </Link>
-                  {isAdmin && (
+              <>
+                <NotificationDropdown />
+                <div className="relative group">
+                  <button className="flex items-center space-x-2 px-3 py-2 rounded-full bg-neutral-50 border border-neutral-100 group-hover:bg-neutral-100 transition-colors">
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center">
+                      {user.profilePicture ? (
+                        <img
+                          src={user.profilePicture}
+                          alt={user.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <FiUser className="text-primary-600" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium text-neutral-700">{user.username}</span>
+                  </button>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-soft border border-neutral-100 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform group-hover:translate-y-0 translate-y-1 z-50">
                     <Link
-                      to="/admin/dashboard"
+                      to="/profile"
                       className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
                     >
-                      <BiSolidDashboard className="mr-3 text-neutral-400" /> Admin Dashboard
+                      <FiUser className="mr-3 text-neutral-400" /> Profile
                     </Link>
-                  )}
-                  <div className="border-t border-neutral-100 my-1"></div>
-                  <button
-                    onClick={logout}
-                    className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-accent-600 flex items-center"
-                  >
-                    <FiLogOut className="mr-3 text-neutral-400" /> Logout
-                  </button>
+                    <Link
+                      to="/create-blog"
+                      className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
+                    >
+                      <FiEdit className="mr-3 text-neutral-400" /> Create Blog
+                    </Link>
+                    <Link
+                      to="/liked-blogs"
+                      className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-3 text-neutral-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                      </svg>
+                      Liked Blogs
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin/dashboard"
+                        className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-primary-600 flex items-center"
+                      >
+                        <BiSolidDashboard className="mr-3 text-neutral-400" /> Admin Dashboard
+                      </Link>
+                    )}
+                    <div className="border-t border-neutral-100 my-1"></div>
+                    <button
+                      onClick={logout}
+                      className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 hover:text-accent-600 flex items-center"
+                    >
+                      <FiLogOut className="mr-3 text-neutral-400" /> Logout
+                    </button>
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
               <div className="flex items-center space-x-4">
                 <Link
@@ -178,6 +182,7 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
+            {isAuthenticated && <NotificationDropdown />}
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 rounded-md text-neutral-700 hover:text-primary-600"

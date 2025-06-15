@@ -1,5 +1,6 @@
 const Blog = require('../models/Blog');
 const Comment = require('../models/Comment');
+const Notification = require('../models/Notification');
 const { ErrorResponse } = require('../utils/errorHandler');
 const { uploadToCloudinary } = require('../utils/fileUpload');
 
@@ -249,23 +250,36 @@ exports.deleteBlog = async (req, res, next) => {
 // @access  Private
 exports.toggleLike = async (req, res, next) => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    const blog = await Blog.findById(req.params.id).populate('author', 'username');
 
     if (!blog) {
-      return next(new ErrorResponse(`Blog not found with id of ${req.params.id}`, 404));
+      return next(new ErrorResponse('Blog not found', 404));
     }
 
-    // Check if the blog has been liked already
     const isLiked = blog.isLiked(req.user._id);
 
-    // Toggle like
     if (isLiked) {
       blog.removeLike(req.user._id);
     } else {
       blog.addLike(req.user._id);
+
+      // Create notification if the blog author is not the one liking
+      if (blog.author._id.toString() !== req.user._id.toString()) {
+        try {
+          await Notification.create({
+            recipient: blog.author._id,
+            sender: req.user._id,
+            type: 'like',
+            blog: blog._id,
+            message: `${req.user.username} liked your blog "${blog.title}"`
+          });
+        } catch (notifError) {
+          console.error('Error creating like notification:', notifError);
+          // Don't throw error, just log it
+        }
+      }
     }
 
-    // Save blog
     await blog.save();
 
     res.status(200).json({
@@ -274,7 +288,8 @@ exports.toggleLike = async (req, res, next) => {
       isLiked: !isLiked
     });
   } catch (error) {
-    next(error);
+    console.error('Error in toggleLike:', error);
+    next(new ErrorResponse('Error toggling like', 500));
   }
 };
 
@@ -364,5 +379,57 @@ exports.getCategories = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+// @desc    Add comment to blog
+// @route   POST /api/blogs/:id/comments
+// @access  Private
+exports.addComment = async (req, res, next) => {
+  try {
+    const blog = await Blog.findById(req.params.id).populate('author', 'username');
+    
+    if (!blog) {
+      return next(new ErrorResponse('Blog not found', 404));
+    }
+
+    const comment = await Comment.create({
+      content: req.body.content,
+      user: req.user._id,
+      blog: blog._id
+    });
+
+    // Add comment to blog's comments array
+    blog.comments.push(comment._id);
+    blog.commentsCount = blog.comments.length;
+    await blog.save();
+
+    // Populate user information
+    await comment.populate('user', 'username profilePicture');
+
+    // Create notification if the blog author is not the one commenting
+    if (blog.author._id.toString() !== req.user._id.toString()) {
+      try {
+        await Notification.create({
+          recipient: blog.author._id,
+          sender: req.user._id,
+          type: 'comment',
+          blog: blog._id,
+          comment: comment._id,
+          message: `${req.user.username} commented on your blog "${blog.title}"`
+        });
+      } catch (notifError) {
+        console.error('Error creating comment notification:', notifError);
+        // Don't throw error, just log it
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      comment
+    });
+  } catch (error) {
+    console.error('Error in addComment:', error);
+    next(new ErrorResponse('Error adding comment', 500));
   }
 }; 

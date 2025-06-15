@@ -26,6 +26,7 @@ app.use('/api/comments', require('./routes/commentRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Base route
 app.get('/', (req, res) => {
